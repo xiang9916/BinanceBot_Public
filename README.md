@@ -1,6 +1,14 @@
 # Binance Bot (Public)
 
-欢迎！此 git 仅用于分享学习加密货币量化交易的
+## 环境要求
+
+```
+guppy3==3.1.2
+matplotlib==3.5.2
+requests==2.27.1
+```
+
+## 使用
 
 BinanceBackTesting.py 回测
 
