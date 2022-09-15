@@ -179,7 +179,7 @@ class Client:
                 jsonprint(r.json())
                 time.sleep(10)
 
-#       账户和交易接口
+    #       账户和交易接口
     #           下单 POST /api/v3/order (HMAC SHA256)
     def postOrder(self, symbol, side, type, positionSide=None, reduceOnly=None, quantity=None, price=None, newClientOrderId=None, stopPrice=None, activationPrice=None, callbackRate=None, timeInForce=None, workingType=None, priceProtect=None, newOrderRespType=None, recvWindow=None):
         while 1:
@@ -205,6 +205,52 @@ class Client:
                 jsonprint(r.json())
                 time.sleep(10)
 
+    #           撤销单一交易对的所有挂单 DELETE /api/v3/openOrders (HMAC SHA256)
+    def deleteOpenOrders(self, symbol):
+        while 1:
+            PATH = '/api/v3/openOrders'
+            params = {
+                'symbol': symbol
+            }
+
+            params['timestamp'] = timeStamp()
+            params['signature'] = sign(params, SECRET_KEY)
+            url = urljoin(BASE_URL, PATH)
+            r = requests.delete(url, headers=headers, params=params)
+            if r.status_code == 200:
+                return r.json()
+            else:
+                print()
+                print('ERROR', r)
+                print('DELETE /api/v3/openOrders (HMAC SHA256)')
+                jsonprint(params)
+                jsonprint(r.json())
+                time.sleep(10)
+    
+    #           查询订单 GET /api/v3/order (HMAC SHA256)
+    def getOrder(self, symbol, orderId = None, origClientOrderId = None):
+        while 1:
+            PATH = '/api/v3/order'
+            params = {
+                'symbol': symbol
+            }
+
+            add(params, {'orderId': orderId, 'origClientOrderId': origClientOrderId})
+            params['timestamp'] = timeStamp()
+            params['signature'] = sign(params, SECRET_KEY)
+            url = urljoin(BASE_URL, PATH)
+            r = requests.get(url, headers=headers, params=params)
+            if r.status_code == 200:
+                return r.json()
+            else:
+                print()
+                print('ERROR', r)
+                print('GET /api/v3/order (HMAC SHA256)')
+                jsonprint(params)
+                jsonprint(r.json())
+                time.sleep(10)
+
+    
     #   U本位合约接口
     #       行情接口
     #           获取交易规则和交易对 GET /fapi/v1/exchangeInfo
@@ -478,7 +524,7 @@ class Client:
                 time.sleep(10)
 
     #           批量撤销订单 DELETE /dapi/v1/allOpenOrders (HMAC SHA256)
-    def deleteAllOpenOrders(self, symbol = 'ETHUSD_PERP'):
+    def deleteDAllOpenOrders(self, symbol = 'ETHUSD_PERP'):
         while 1:
             PATH = '/dapi/v1/allOpenOrders'
             params = {
