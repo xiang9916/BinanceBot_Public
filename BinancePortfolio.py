@@ -3,6 +3,7 @@ from BinanceIndicators import VWAP
 from BinanceTools import candles_decimal, proxy
 
 import datetime
+import numpy as np
 import threading
 import time
 from decimal import *
@@ -136,7 +137,7 @@ def purchase_history(history):
 
 
 def report():
-    assets_candles = weighted_candels(assets=assets)
+    assets_candles = weighted_candels(assets=assets, limit=720)
 
     # 报告现价和涨跌幅
     print('截至 {} 加密市场行情'.format(time.strftime("%Y/%m/%d-%H:%M:%S",time.localtime(int(assets_candles['BTC'][-1][0]/1000)))))
@@ -152,6 +153,23 @@ def report():
             round((assets_candles[asset][-2][5]-assets_candles[asset][-2][9]) / assets_candles[asset][-2][5] * 100, 2),
             '↓' if assets_candles[asset][-2][5] > assets_candles[asset][-2][9]*2 else '↑'
         ))
+    print()
+
+    # 基本面信息
+    print('截至 {} 基本面信息'.format(time.strftime("%Y/%m/%d-%H:%M:%S",time.localtime(int(assets_candles['BTC'][-1][0]/1000)))))
+    print('Currency\tP/E\tP/E(360)')
+    for asset in assets:
+        if len(assets_candles[asset]) >= 720:
+            print('{}:\t\t{}\t{}'.format(
+                asset,
+                round(assets_candles[asset][-1][1] / (assets_candles[asset][-1][1]-assets_candles[asset][-361][1]), 2),
+                round(np.mean(list(map(lambda x: x[1], assets_candles[asset][-360:]))) / (np.mean(list(map(lambda x: x[1], assets_candles[asset][-360:])))-np.mean(list(map(lambda x: x[1], assets_candles[asset][-720:-361])))), 2)
+            ))
+        else:
+            print('{}:\t\t数据只有 {}/720 天，无法提供基本面信息'.format(
+                asset,
+                len(assets_candles[asset])
+            ))
     print()
 
     # 报告每份 Portfolio 价值
@@ -211,7 +229,7 @@ class WeightedCandles(threading.Thread):
         self.symbol_list = []
         self.candles_list = []
         for sc in stablecoins:
-            if self.asset + sc == 'PAXGUSDC':
+            if self.asset + sc in ['PAXGUSDC']:
                 continue
             self.symbol = self.asset + sc
             self.symbol_list.append(self.symbol)
@@ -237,7 +255,11 @@ def weighted_candels(assets, interval='1d', limit=2):
         candles_list = thread_dict[t].result()
         weighted_candles = []
         len_list = len(candles_list)
-        for j in range(limit):
+        real_limit = min(map(lambda x: len(x), candles_list))
+        if real_limit >= 720:
+            if max(map(lambda x: len(x), candles_list)) >= 720:
+                candles_list = [i for i in candles_list if len(i)>=720]
+        for j in range(real_limit):
             weighted_candles.append([])
             for k in range(11):
                 if k in [0, 6]:
@@ -262,10 +284,11 @@ def weighted_candels(assets, interval='1d', limit=2):
 if __name__ == '__main__':
     history = {
         'PAXG':[Decimal('0.01000000'), Decimal('1.00')/100, 2019, 10],
+
         'BTC': [Decimal('0.00210000'), Decimal('1.20')/100, 2018, 1],
         'ETH': [Decimal('0.02100000'), Decimal('1.50')/100, 2021, 4],
         'BNB': [Decimal('0.02000000'), Decimal('5.23')/100, 2021, 7],
-        'XRP': [Decimal('10.00000000'),Decimal('0.45')/100, 2018, 4],
+
         'ADA': [Decimal('4.50000000'), Decimal('1.00')/100, 2022, 4],
         'SOL': [Decimal('0.05000000'), Decimal('0.78')/100, 2022, 4],
     }
